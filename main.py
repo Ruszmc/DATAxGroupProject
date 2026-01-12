@@ -1,6 +1,9 @@
 import streamlit as st
-import plotly.express as px
 
+import matplotlib.pyplot as plt
+
+import plots
+from plots import hour_of_day
 from data import load_data
 
 df = load_data()
@@ -9,51 +12,35 @@ st.header('US-Unfälle Datenanalyse')
 
 
 
-tab1, tab2 = st.tabs([
+tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "Übersicht",
-    "Weitere Analysen"
+    "Wetter",
+    "Timing",
+    "Regionen",
+    "Verkehrsobjekte"
 ])
 
 with tab1:
     st.write(df.head())
     total_entries = df.shape[0]
-    col1, col2 = st.columns([1, 1])
+    col1, col2, col3 = st.columns([1, 1, 1])
     with col1:
-        st.write("Total Entries:", total_entries)
+        st.metric("Gesamtanzahl Unfälle", f"{total_entries:,}")
     with col2:
         avg_severity = df['Severity'].mean()
-        st.write("Average Severity:", round(avg_severity, 2))
+        st.metric("Durchschnittliche Schwere", f"{avg_severity:.2f}")
+    with col3:
+        avg_temp = df['Temperature(F)'].mean()
+        st.metric("Ø Temperatur (F)", f"{avg_temp:.1f}°")
 
 with tab2:
-    weather_counts = (
-        df["Weather_Condition"]
-        .value_counts()
-        .reset_index()
-    )
+    plots.weather(df)
 
-    weather_counts.columns = ["Weather", "Count"]
+with tab3:
+    hour_of_day(df)
 
-    MIN_COUNT = 5000
+with tab4:
+    plots.state_analysis(df)
 
-    mask = weather_counts["Count"] < MIN_COUNT
-    other_sum = weather_counts.loc[mask, "Count"].sum()
-
-    weather_counts = weather_counts.loc[~mask]
-
-    if other_sum > 0:
-        weather_counts.loc[len(weather_counts)] = ["Other", other_sum]
-
-    fig = px.pie(
-        weather_counts,
-        names="Weather",
-        values="Count",
-        title="Weather Conditions – Percentage Share",
-        hole=0.5  # Donut-Chart (optional)
-    )
-
-    fig.update_traces(
-        textinfo="percent+label",
-        textposition="inside"
-    )
-
-    st.plotly_chart(fig, use_container_width=True)
+with tab5:
+    plots.traffic_features(df)
